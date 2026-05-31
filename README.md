@@ -32,7 +32,7 @@ Mục tiêu: để một team có thể **bắt tay vào dự án ngay**, với 
 ## Cấu trúc toolkit
 
 ```text
-agentspechub/
+agent-spec-hub/
 ├── README.md
 ├── LICENSE                       # MIT
 ├── CONTRIBUTING.md
@@ -67,7 +67,7 @@ agentspechub/
 
 ```bash
 # 1. Clone toolkit
-git clone <repo-url> agentspechub && cd agentspechub
+git clone <repo-url> agent-spec-hub && cd agent-spec-hub
 
 # 2. Dựng một dự án mới từ toolkit
 ./scripts/init-project.sh ../my-new-project "Tên Dự Án"

@@ -27,3 +27,13 @@ AI Agent hoạt động tốt hay không phụ thuộc vào **cái khung (harnes
 ## Ví dụ điển hình: fallback âm thầm
 
 AI Agent cố khởi tạo MCP GitHub nhưng thất bại, rồi tự "chữa cháy" bằng `gh` CLI hoặc script. Đây là lỗi tầng *tích hợp công cụ* + *thiếu kỷ luật báo lỗi*. Cách xử lý đúng: Agent **DỪNG và báo cáo blocker**, con người fix cấu hình MCP tận gốc. Quy tắc này được mã hóa cứng trong Constitution mục 1.5.
+
+## Ví dụ điển hình: script phụ thuộc file ẩn
+
+`init-project.sh` từng `cp` thẳng `.gitignore`/`.github/` từ toolkit. Khi toolkit được sao chép/đồng bộ mà file ẩn không đi theo, lệnh `cp` fail và vỡ toàn bộ quá trình init. Áp dụng quy tắc vàng — sửa luôn ở repo thay vì để người dùng tự xoay xở:
+
+- Script **tự sinh** `.gitignore` khi không tìm thấy (không phụ thuộc file ẩn của toolkit).
+- File tùy chọn (vd `ci.yml`) thiếu thì **cảnh báo và bỏ qua**, không fail.
+- `git commit` khởi tạo dùng identity dự phòng để không vỡ khi máy chưa cấu hình `user.name/email`.
+
+**Bài học chung cho mọi script trong toolkit:** không giả định file ẩn luôn tồn tại; tác vụ tùy chọn phải fail mềm (cảnh báo + tiếp tục), chỉ fail cứng với tác vụ cốt lõi; mọi script chạy bằng `bash`, không phải `sh`. Quy tắc này được ghi trong `CONTRIBUTING.md`.

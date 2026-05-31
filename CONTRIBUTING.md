@@ -23,6 +23,16 @@ Cảm ơn bạn đã quan tâm! Toolkit này phục vụ cộng đồng team Dev
 - Tăng version theo SemVer (xem mục Governance trong chính file đó).
 - Ghi vào `CHANGELOG.md`.
 
+## Quy tắc viết script (scripts/)
+
+Áp dụng "quy tắc vàng" của Harness Engineering: mỗi lần sửa lỗi để lại cải tiến lâu dài, script không được vỡ vì môi trường khác nhau.
+
+- **Chạy bằng `bash`, không phải `sh`.** Script dùng heredoc/brace-expansion nên `sh` (dash) sẽ lỗi. Luôn có shebang `#!/usr/bin/env bash` và `set -euo pipefail`.
+- **Không giả định file ẩn luôn tồn tại.** File ẩn (`.gitignore`, `.github/`) có thể không đi theo khi toolkit được sao chép/đồng bộ. Nếu cần, **tự sinh** thay vì `cp` thẳng.
+- **Fail mềm với tác vụ tùy chọn.** Thiếu file tùy chọn (vd `ci.yml`) thì cảnh báo và bỏ qua, không dừng cả script. Chỉ fail cứng với tác vụ cốt lõi.
+- **Không phụ thuộc cấu hình máy.** `git commit` khởi tạo dùng identity dự phòng (`-c user.name`/`-c user.email`) để không vỡ khi máy chưa cấu hình global.
+- **Test trước khi commit:** chạy `init-project.sh` ra một thư mục tạm và kiểm tra cây kết quả + git log.
+
 ## Báo lỗi / đề xuất
 
 Mở Issue với nhãn phù hợp (`bug`, `enhancement`, `docs`, `question`).

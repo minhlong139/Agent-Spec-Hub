@@ -2,6 +2,15 @@
 
 Tuân theo [Keep a Changelog](https://keepachangelog.com/) và [Semantic Versioning](https://semver.org/).
 
+## [1.0.1] - 2026-05-31
+
+### Fixed
+- `init-project.sh` không còn fail khi file ẩn (`.gitignore`, `.github/ci.yml`) của toolkit không được đồng bộ: tự sinh `.gitignore`, fail mềm với `ci.yml`, `git commit` dùng identity dự phòng.
+
+### Added
+- Quy tắc viết script trong `CONTRIBUTING.md` (chạy bằng bash, không giả định file ẩn, fail mềm tác vụ tùy chọn).
+- Mục "Ví dụ điển hình: script phụ thuộc file ẩn" trong `docs/philosophy/harness-engineering.md`.
+
 ## [1.0.0] - 2026-05-31
 
 ### Added

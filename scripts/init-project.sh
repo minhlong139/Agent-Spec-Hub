@@ -39,11 +39,54 @@ cp "$TOOLKIT_DIR"/templates/agents/*.md "$TARGET/"
 cp "$TOOLKIT_DIR"/scripts/{setup-dev.sh,run-tests.sh,verify-pr.sh} "$TARGET/scripts/"
 chmod +x "$TARGET"/scripts/*.sh
 
-# 5. CI pipeline mẫu
-cp "$TOOLKIT_DIR"/.github/workflows/ci.yml "$TARGET/.github/workflows/ci.yml" 2>/dev/null || true
+# 5. CI pipeline mẫu (bỏ qua nếu không tìm thấy — vd file ẩn không được đồng bộ)
+if [ -f "$TOOLKIT_DIR/.github/workflows/ci.yml" ]; then
+  cp "$TOOLKIT_DIR/.github/workflows/ci.yml" "$TARGET/.github/workflows/ci.yml"
+else
+  echo "  (Không thấy ci.yml trong toolkit — bỏ qua, bạn có thể thêm sau)"
+fi
 
-# 6. .gitignore
-cp "$TOOLKIT_DIR/.gitignore" "$TARGET/.gitignore"
+# 6. .gitignore — tự sinh để không phụ thuộc file ẩn của toolkit
+if [ -f "$TOOLKIT_DIR/.gitignore" ]; then
+  cp "$TOOLKIT_DIR/.gitignore" "$TARGET/.gitignore"
+else
+  cat > "$TARGET/.gitignore" <<'GITIGNORE'
+# Dependencies
+node_modules/
+.venv/
+__pycache__/
+
+# Build
+dist/
+build/
+.next/
+out/
+
+# Env & secrets — KHÔNG commit (Constitution mục 1.2, 11)
+.env
+.env.*
+*.local
+secrets/
+*.pem
+*.key
+
+# Agent-specific / local config (Constitution mục 1.4)
+.claude/
+.cursor/
+.aider*
+*.local.md
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+GITIGNORE
+fi
 
 # 7. Skeleton feature đầu tiên
 cp -r "$TOOLKIT_DIR/templates/specs/NNN-feature-name" "$TARGET/specs/001-feature-name"
