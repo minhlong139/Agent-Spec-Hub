@@ -70,13 +70,14 @@ agent-spec-hub/
 git clone <repo-url> agent-spec-hub && cd agent-spec-hub
 
 # 2. Dựng một dự án mới từ toolkit
+#    (tự động khởi tạo luôn Spec Kit: .specify/ + skill /speckit-* — cần `uv` + `specify` CLI)
 ./scripts/init-project.sh ../my-new-project "Tên Dự Án"
 
 # 3. Mở dự án vừa tạo, điền các marker 【ĐIỀN】 trong constitution.md
 cd ../my-new-project
 ```
 
-Chi tiết: xem [`docs/getting-started.md`](docs/getting-started.md).
+> Bước 2 tự cài/kiểm tra `specify` CLI rồi chạy `specify init` để sinh `.specify/` và bộ skill `/speckit-*`. Thiếu `uv`/`specify` thì script vẫn chạy nhưng bỏ qua Spec Kit và in hướng dẫn cài (hoặc chủ động bỏ qua bằng `SKIP_SPECKIT=1`). Chi tiết & cách khắc phục lỗi `specify init`: xem [`docs/getting-started.md`](docs/getting-started.md).
 
 ## Ngôn ngữ
 

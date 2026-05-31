@@ -5,6 +5,12 @@ Hướng dẫn dựng một dự án mới có sẵn hàng rào an toàn cho AI 
 ## Yêu cầu
 
 - `git`, `bash`
+- `uv` + `specify` CLI (Spec Kit) — để bước tự động hoá Spec Kit chạy được. Cài:
+  ```bash
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  uv tool install specify-cli --from git+https://github.com/github/spec-kit.git
+  ```
+  > CLI bản mới bundle template trong package (không cần mạng khi init). KHÔNG dùng bản cũ tải asset từ GitHub release — asset đã bị gỡ nên init bản cũ lỗi `no assets`/404. Nếu thiếu `uv`/`specify`, script vẫn chạy nhưng **bỏ qua** Spec Kit và in hướng dẫn cài.
 - MCP GitHub đã cấu hình cho AI Agent (theo Constitution mục 1.5 — đây là kênh duy nhất cho thao tác remote)
 
 ## Cách 1 — Dùng script `init-project.sh` (khuyến nghị)
@@ -23,7 +29,8 @@ Script sẽ:
 3. Copy bộ template agent vào repo.
 4. Copy 3 script `setup-dev/run-tests/verify-pr` và CI pipeline mẫu.
 5. Tạo skeleton `specs/001-feature-name/`.
-6. `git init` (KHÔNG tự tạo remote/branch protection — đó là việc của con người, HITL).
+6. **Khởi tạo Spec Kit**: cài/kiểm tra `specify` CLI rồi chạy `specify init --here --ai claude --script sh --force --no-git` → sinh `.specify/` + skill `/speckit-*`, và đồng bộ `constitution.md` → `.specify/memory/constitution.md`. Bỏ qua chủ động bằng `SKIP_SPECKIT=1`.
+7. `git init` (KHÔNG tự tạo remote/branch protection — đó là việc của con người, HITL).
 
 ## Cách 2 — Thủ công
 
