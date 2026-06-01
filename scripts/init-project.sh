@@ -4,9 +4,13 @@
 # Cách dùng:
 #   ./scripts/init-project.sh <đường-dẫn-dự-án-mới> "Tên Dự Án"
 #
-# Phân vai (Constitution):
-#   [AI]    Script này tự dựng cấu trúc, copy template, git init.
-#   [Người] Tạo repo remote + branch protection + secret KHÔNG nằm trong script (HITL, mục 1.5/7).
+# Phân vai (Constitution mục 1.5 — xem chi tiết tại docs/constitution.template.md):
+#   [AI/Script] Dựng cấu trúc thư mục, copy template, git init — KHÔNG cần GitHub.
+#   [Người]     Tạo repo remote trên GitHub (thủ công hoặc qua MCP GitHub).
+#   [Script]    setup-github.sh — chạy SAU KHI repo đã có trên GitHub:
+#                 labels · Project IDs · mcp-server/.env · GitHub Actions Variables
+#                 (được phép dùng gh CLI vì đây là tác vụ setup một lần, không phải runtime)
+#   [MCP]       Mọi tác vụ runtime (sync task, đẩy PR, duyệt PR) → CHỈ qua MCP GitHub.
 set -euo pipefail
 
 TARGET="${1:-}"
@@ -37,6 +41,8 @@ cp "$TOOLKIT_DIR"/templates/agents/*.md "$TARGET/"
 
 # 4. Scripts bắt buộc
 cp "$TOOLKIT_DIR"/scripts/{setup-dev.sh,run-tests.sh,verify-pr.sh} "$TARGET/scripts/"
+# Copy setup-github.sh — chạy sau khi repo đã tạo trên GitHub
+cp "$TOOLKIT_DIR/scripts/setup-github.sh" "$TARGET/scripts/setup-github.sh"
 chmod +x "$TARGET"/scripts/*.sh
 
 # 5. CI pipeline mẫu (bỏ qua nếu không tìm thấy — vd file ẩn không được đồng bộ)
@@ -92,49 +98,7 @@ fi
 cp -r "$TOOLKIT_DIR/templates/specs/NNN-feature-name" "$TARGET/specs/001-feature-name"
 cp -r "$TOOLKIT_DIR/templates/design/NNN-feature-name" "$TARGET/design/001-feature-name"
 
-# 8. Spec Kit tooling (.specify/ + skills /speckit-*) — quy trình tự động hoá
-#    Cài & khởi tạo bộ công cụ Spec Kit chính thức (github/spec-kit) để dự án có
-#    sẵn .specify/ và các skill /speckit-* (specify/plan/tasks/implement...).
-#    Đặt TRƯỚC git init để mọi file Spec Kit nằm trong commit khởi tạo.
-#    Harness Engineering (mục 9): nếu thiếu công cụ thì DỪNG có kiểm soát + báo
-#    cáo rõ ràng, KHÔNG workaround ngầm. Bỏ qua chủ động bằng SKIP_SPECKIT=1.
-if [ "${SKIP_SPECKIT:-0}" = "1" ]; then
-  echo "==> (SKIP_SPECKIT=1 — bỏ qua khởi tạo Spec Kit)"
-else
-  # 8.1 Đảm bảo có 'specify' CLI. Bản mới bundle template trong package nên
-  #     KHÔNG cần tải asset từ GitHub release (vốn đã bị gỡ → init bản cũ lỗi 404).
-  if ! command -v specify >/dev/null 2>&1; then
-    if command -v uv >/dev/null 2>&1; then
-      echo "==> Chưa có 'specify' CLI — cài từ nguồn git qua uv (bundle template, không cần mạng để init)..."
-      uv tool install specify-cli --from git+https://github.com/github/spec-kit.git \
-        || echo "  (!) Cài specify CLI thất bại — bỏ qua bước Spec Kit (xem hướng dẫn cuối)."
-    else
-      echo "  (!) Không thấy cả 'specify' lẫn 'uv' — bỏ qua Spec Kit."
-      echo "      Cài uv rồi chạy lại, hoặc init Spec Kit thủ công (xem hướng dẫn cuối)."
-    fi
-  fi
-
-  # 8.2 Khởi tạo .specify/ + skills vào dự án. --force vì thư mục đã có file;
-  #     --no-git để KHÔNG tạo repo riêng (bước 9 mới git init). Đã kiểm chứng:
-  #     init chỉ THÊM file mới, không ghi đè constitution.md/specs đã dựng ở trên.
-  if command -v specify >/dev/null 2>&1; then
-    echo "==> Khởi tạo Spec Kit (.specify/ + skills /speckit-*) cho dự án..."
-    (
-      cd "$TARGET"
-      specify init --here --ai claude --script sh --force --no-git \
-        || echo "  (!) 'specify init' thất bại — dự án vẫn dùng được, init Spec Kit sau (xem hướng dẫn cuối)."
-    )
-    # 8.3 Một nguồn sự thật (Constitution 1.1) + cấm tài liệu song song (4.2):
-    #     đồng bộ constitution chính thức (root) vào nơi Spec Kit tooling đọc,
-    #     thay cho template rỗng [PROJECT_NAME] mà specify init sinh ra.
-    if [ -f "$TARGET/constitution.md" ] && [ -d "$TARGET/.specify/memory" ]; then
-      cp "$TARGET/constitution.md" "$TARGET/.specify/memory/constitution.md"
-      echo "  (Đã đồng bộ constitution.md -> .specify/memory/constitution.md)"
-    fi
-  fi
-fi
-
-# 9. git init (KHÔNG tạo remote/branch protection — đó là việc của con người)
+# 8. git init (KHÔNG tạo remote/branch protection — đó là việc của con người)
 (
   cd "$TARGET"
   git init -q
@@ -147,17 +111,41 @@ fi
 )
 
 echo ""
-echo "==> XONG. Bước tiếp theo (con người):"
-echo "  1. [Người] Tạo repo trên GitHub (qua MCP GitHub) + bật branch protection main/develop"
-echo "  2. [Người] Setup secret/token (không hardcode)"
-echo "  3. [Tech Lead] Mở constitution.md, điền marker 【ĐIỀN】 ở Section 3 (stack), 2.2, 〔CHỌN〕"
-echo "  4. [PO/BO] Điền nội dung nghiệp vụ + AGENTS.md context"
-echo "  5. Bắt đầu feature 001 theo phase Spec-Kit (skill /speckit-specify, /speckit-plan...)."
+echo "==> XONG. Bước tiếp theo:"
 echo ""
-if ! command -v specify >/dev/null 2>&1 || [ ! -d "$TARGET/.specify" ]; then
-  echo "==> Spec Kit CHƯA được khởi tạo. Để có .specify/ + skill /speckit-*:"
-  echo "     1) Cài uv:        curl -LsSf https://astral.sh/uv/install.sh | sh"
-  echo "     2) Cài CLI mới:   uv tool install specify-cli --from git+https://github.com/github/spec-kit.git"
-  echo "     3) Init trong dự án: cd \"$TARGET\" && specify init --here --ai claude --script sh --force --no-git"
-  echo "        (CLI bản mới bundle template — KHÔNG dùng bản cũ tải asset GitHub, vốn lỗi 404)"
-fi
+echo "  ── SETUP (con người & script) ──────────────────────────────────────"
+echo "  1. [Người]     Tạo repo trên GitHub (thủ công hoặc qua MCP GitHub)"
+echo "  2. [Người]     Push code lên remote:"
+echo "                   cd $TARGET"
+echo "                   git remote add origin https://github.com/OWNER/REPO.git"
+echo "                   git push -u origin main"
+echo ""
+echo "  3. [Script]    Chạy setup-github.sh để hoàn tất cấu hình GitHub:"
+echo "                   cd $TARGET"
+echo "                   ./scripts/setup-github.sh"
+echo "                 Script này (được phép dùng gh CLI) sẽ tự động:"
+echo "                   • Tạo 9 GitHub Labels"
+echo "                   • Lấy GitHub Project v2 IDs & Column IDs"
+echo "                   • Sinh mcp-server/.env cho MCP server"
+echo "                   • Set GitHub Actions Variables"
+echo ""
+echo "  4. [Người]     Branch Protection (main):"
+echo "                   Repo → Settings → Branches → Add rule"
+echo "                   ✅ Require PR (1 approval) + status check: quality-gate"
+echo "                   ✅ Do not allow bypassing"
+echo ""
+echo "  5. [Người]     Setup secret/token (không hardcode)"
+echo ""
+echo "  ── NỘI DUNG (Tech Lead & PO) ───────────────────────────────────────"
+echo "  6. [Tech Lead]  Mở constitution.md → điền marker 【ĐIỀN】"
+echo "                   (Section 3: tech stack, Section 2.2: môi trường, 〔CHỌN〕)"
+echo "  7. [PO/BO]      Điền nội dung nghiệp vụ + AGENTS.md context"
+echo ""
+echo "  ── RUNTIME (MCP GitHub — không dùng gh) ────────────────────────────"
+echo "  8. [Dev]        Cài MCP server (sau khi mcp-server/.env đã có):"
+echo "                   cd $TARGET/mcp-server"
+echo "                   docker compose --env-file .env up -d --build"
+echo "  9. Bắt đầu feature 001 theo phase Spec-Kit qua MCP GitHub."
+echo ""
+echo "  📌 Lưu ý: Sau bước setup, mọi tác vụ runtime (tạo/sync Issue, PR, review)"
+echo "     PHẢI qua MCP GitHub. Nếu MCP lỗi → hỏi người dùng, KHÔNG tự dùng gh."

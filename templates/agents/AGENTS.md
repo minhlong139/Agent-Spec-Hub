@@ -18,9 +18,25 @@
 - Verification: CI Pipeline + script local
 
 ## Kênh tương tác GitHub (theo Constitution mục 1.5)
-- Thao tác remote (Issue, PR, merge, release, settings): CHỈ qua MCP GitHub
-- git local được phép; gh CLI/script: cấm trừ khi con người approve
-- MCP GitHub lỗi → DỪNG và báo cáo, KHÔNG tự fallback sang gh/script
+
+**Luồng Setup (một lần — gh CLI được phép):**
+- `scripts/setup-github.sh` dùng `gh` CLI để tạo Labels, lấy Project IDs, sinh `mcp-server/.env`, set Actions Variables
+- Đây là tác vụ hạ tầng một lần, con người kiểm soát trực tiếp khi chạy script
+
+**Luồng Runtime (hàng ngày — MCP-first):**
+- Tạo/sửa/đóng Issue, tạo PR, comment, review, merge, sync trạng thái task: **CHỈ qua MCP GitHub**
+- `git` local (branch, commit, push branch cá nhân): vẫn được phép
+- `gh` CLI trong runtime: **CẤM tự dùng** — phải hỏi người dùng trước
+
+**Khi MCP GitHub lỗi trong runtime — quy trình bắt buộc:**
+```
+1. Dừng tác vụ
+2. Thông báo: "MCP GitHub không khả dụng — [mô tả lỗi cụ thể]"
+3. Hỏi người dùng: "Tôi có thể dùng gh CLI thay thế cho [tác vụ X] không?"
+4. Chỉ tiến hành nếu người dùng đồng ý rõ ràng
+5. Nhắc người dùng fix lại MCP sau khi xong
+```
+**KHÔNG fallback âm thầm** — vi phạm Constitution mục 1.5.
 
 ## Phối hợp theo phase với AI
 
